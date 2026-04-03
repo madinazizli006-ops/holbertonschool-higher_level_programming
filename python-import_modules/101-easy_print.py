@@ -1,2 +1,2 @@
 #!/usr/bin/python3
-import __hello__
+__import__('pyiscool')

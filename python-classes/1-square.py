@@ -1,21 +1,14 @@
 #!/usr/bin/python3
-"""Square Class
-
-A Square Class
-
-"""
+"""Kvadrat klasını təyin edən modul."""
 
 
 class Square:
+    """Kvadratı təmsil edən klas."""
 
     def __init__(self, size):
-        """__init__
+        """Yeni bir Square yaradır.
 
-        The __init__ method initializes the size value
-        of the square.
-
-        Attributes:
-            size (int): The size of the square.
-
+        Args:
+            size: Kvadratın tərəfinin ölçüsü.
         """
         self.__size = size

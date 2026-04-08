@@ -1,10 +1,7 @@
 #!/usr/bin/python3
-"""Square Class
-
-This class don't do anything for the moment
-
-"""
+"""Square klasi üçün modul."""
 
 
 class Square:
+    """Boş bir kvadrat klasını təmsil edir."""
     pass

@@ -1,85 +1,46 @@
-from flask import Flask, render_template, request
 import json
 import csv
-import os
+from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
+def read_json():
+    with open('products.json', 'r') as f:
+        return json.load(f)
 
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-
-@app.route('/about')
-def about():
-    return render_template('about.html')
-
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html')
-
-
-@app.route('/items')
-def items():
-    try:
-        with open('items.json') as f:
-            data = json.load(f)
-        items = data.get('items', [])
-        return render_template('items.html', items=items)
-    except FileNotFoundError:
-        return "Items file not found", 404
-    except json.JSONDecodeError:
-        return "Error decoding JSON", 500
-
-
-def read_json(file_path):
-    with open(file_path, 'r') as file:
-        return json.load(file)
-
-
-def read_csv(file_path):
+def read_csv():
     products = []
-    with open(file_path, 'r') as file:
-        reader = csv.DictReader(file)
+    with open('products.csv', 'r') as f:
+        reader = csv.DictReader(f)
         for row in reader:
+            # CSV-dən gələn ID və qiyməti uyğun tipə çeviririk
             row['id'] = int(row['id'])
             row['price'] = float(row['price'])
             products.append(row)
     return products
 
-
 @app.route('/products')
-def products():
+def display_products():
     source = request.args.get('source')
-    product_id = request.args.get('id')
-    file_path = ''
-
-    if source == 'json':
-        file_path = 'products.json'
-
-    elif source == 'csv':
-        file_path = 'products.csv'
-    else:
+    product_id = request.args.get('id', type=int)
+    
+    # 1. Source yoxlanışı
+    if source not in ['json', 'csv']:
         return render_template('product_display.html', error="Wrong source")
 
-    if not os.path.exists(file_path):
-        return render_template('product_display.html', error="File not found")
-
+    # 2. Faylı oxu
     if source == 'json':
-        products = read_json(file_path)
+        products = read_json()
     else:
-        products = read_csv(file_path)
+        products = read_csv()
 
+    # 3. ID filteri (əgər varsa)
     if product_id:
-        product_id = int(product_id)
         products = [p for p in products if p['id'] == product_id]
         if not products:
             return render_template('product_display.html', error="Product not found")
 
     return render_template('product_display.html', products=products)
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

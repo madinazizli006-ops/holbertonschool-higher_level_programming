@@ -5,13 +5,11 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 
-# JSON oxuma funksiyası
-def read_json():
+def get_json_data():
     with open('products.json', 'r') as f:
         return json.load(f)
 
-# CSV oxuma funksiyası
-def read_csv():
+def get_csv_data():
     products = []
     with open('products.csv', 'r') as f:
         reader = csv.DictReader(f)
@@ -21,58 +19,48 @@ def read_csv():
             products.append(row)
     return products
 
-# SQL oxuma funksiyası
-def read_sql(product_id=None):
+def get_sql_data(p_id=None):
     products = []
-    try:
-        conn = sqlite3.connect('products.db')
-        # Sətirləri lüğət (dictionary) formatında almaq üçün:
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        if product_id:
-            cursor.execute('SELECT * FROM Products WHERE id = ?', (product_id,))
-        else:
-            cursor.execute('SELECT * FROM Products')
-            
-        rows = cursor.fetchall()
-        for row in rows:
-            products.append(dict(row))
-        conn.close()
-    except sqlite3.Error as e:
-        print(f"Database error: {e}")
+    conn = sqlite3.connect('products.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    if p_id:
+        cursor.execute('SELECT * FROM Products WHERE id = ?', (p_id,))
+    else:
+        cursor.execute('SELECT * FROM Products')
+    rows = cursor.fetchall()
+    for row in rows:
+        products.append(dict(row))
+    conn.close()
     return products
 
 @app.route('/products')
-def display_products():
+def products():
     source = request.args.get('source')
-    product_id = request.args.get('id', type=int)
-    
-    # Mənbə yoxlanışı
+    p_id = request.args.get('id', type=int)
+
+    # 1. Source yoxlanışı
     if source not in ['json', 'csv', 'sql']:
         return render_template('product_display.html', error="Wrong source")
 
-    products = []
-    
-    # Mənbəyə görə məlumatın çəkilməsi
+    # 2. Məlumatın götürülməsi
     if source == 'json':
-        products = read_json()
+        data = get_json_data()
     elif source == 'csv':
-        products = read_csv()
+        data = get_csv_data()
     elif source == 'sql':
-        products = read_sql(product_id)
-        # SQL-də filteri birbaşa query-də etdiyimiz üçün burada dayanırıq
-        if product_id and not products:
+        data = get_sql_data(p_id)
+        if p_id and not data:
             return render_template('product_display.html', error="Product not found")
-        return render_template('product_display.html', products=products)
+        return render_template('product_display.html', products=data)
 
-    # JSON və CSV üçün filterləmə (çünki onlar bütün faylı oxuyur)
-    if product_id:
-        products = [p for p in products if p['id'] == product_id]
-        if not products:
+    # 3. JSON və CSV üçün ID filteri
+    if p_id:
+        data = [p for p in data if p['id'] == p_id]
+        if not data:
             return render_template('product_display.html', error="Product not found")
 
-    return render_template('product_display.html', products=products)
+    return render_template('product_display.html', products=data)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
